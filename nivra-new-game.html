@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Paradise Memories</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Poppins:wght@400;600&display=swap');
+
+        :root {
+            --glow-color: #f900ff; /* Vibrant Magenta/Pink */
+            --secondary-glow: #00f2ea; /* Neon Teal */
+            --win-glow-color: #fff000; /* Electric Yellow for wins */
+        }
+
+        html, body {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Poppins', sans-serif;
+            color: #fff;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0a2e33, #8d00ff, #f900ff, #00f2ea);
+        }
+
+        #loading-screen {
+            position: fixed;
+            inset: 0;
+            background-color: #100a1c;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 2rem;
+            transition: opacity 0.5s ease-out;
+            cursor: pointer;
+        }
+        .loading-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(3rem, 10vmin, 6rem);
+            background: linear-gradient(90deg, var(--secondary-glow), var(--glow-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+        }
+        .progress-bar-container {
+            width: 80%;
+            max-width: 500px;
+            height: 20px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            border: 2px solid var(--glow-color);
+        }
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--secondary-glow), var(--glow-color));
+            background-size: 200% 200%;
+            transition: width 0.3s ease-out;
+        }
+        #loading-percentage {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        #orientation-blocker {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 9000;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 2rem;
+        }
+        @media (orientation: portrait) {
+            #orientation-blocker { display: flex; }
+            #game-container { display: none !important; }
+        }
+        #orientation-blocker i {
+            font-size: 5rem;
+            margin-bottom: 2rem;
+            color: var(--glow-color);
+            animation: rotate-anim 2s infinite ease-in-out;
+        }
+        @keyframes rotate-anim {
+            0% { transform: rotate(0deg); }
+            50% { transform: rotate(90deg); }
+            100% { transform: rotate(0deg); }
+        }
+
+        #game-container {
+            display: none;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        
+        #mute-button {
+            position: absolute;
+            top: 2vmin;
+            right: 2vmin;
+            width: clamp(40px, 8vmin, 60px);
+            height: clamp(40px, 8vmin, 60px);
+            background: rgba(0,0,0,0.4);
+            border: 2px solid var(--glow-color);
+            color: var(--glow-color);
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 100;
+            font-size: clamp(1.2rem, 3vmin, 1.8rem);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.2s;
+        }
+        #mute-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 15px var(--glow-color);
+        }
+
+        .game-title {
+            position: absolute;
+            top: 7vmin;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(2.5rem, 7vmin, 5rem);
+            z-index: 10;
+            animation: rgb-text-glow 5s linear infinite;
+        }
+        
+        @keyframes rgb-text-glow {
+            0% {
+                color: var(--glow-color);
+                text-shadow: 0 0 10px var(--glow-color), 0 0 20px var(--glow-color), 0 0 30px #fff;
+            }
+            50% {
+                color: var(--secondary-glow);
+                text-shadow: 0 0 10px var(--secondary-glow), 0 0 20px var(--secondary-glow), 0 0 30px #fff;
+            }
+            100% {
+                color: var(--glow-color);
+                text-shadow: 0 0 10px var(--glow-color), 0 0 20px var(--glow-color), 0 0 30px #fff;
+            }
+        }
+
+        #game-area {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2vmin;
+            box-sizing: border-box;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            padding: 0 2.5vmin;
+            flex-shrink: 0;
+            width: clamp(150px, 28vmin, 250px);
+        }
+        
+        #right-panel {
+            gap: 2vmin;
+        }
+
+        #spinButton {
+            font-family: 'Orbitron', sans-serif;
+            width: clamp(100px, 22vmin, 180px);
+            height: clamp(100px, 22vmin, 180px);
+            border: 3px solid var(--glow-color);
+            border-radius: 50%;
+            background-image: linear-gradient(to bottom, rgba(0, 242, 234, 0.3), rgba(0, 242, 234, 0.1));
+            color: #fff;
+            cursor: pointer;
+            text-shadow: 0 0 1vmin var(--glow-color);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(1rem, 2.8vmin, 1.6rem);
+            flex-direction: column;
+            line-height: 1.2;
+        }
+        #spinButton:not(:disabled):hover {
+            background-color: rgba(0, 242, 234, 0.4);
+            box-shadow: 0 0 2vmin var(--glow-color);
+            transform: scale(1.05);
+        }
+        #spinButton:disabled {
+            filter: grayscale(1) brightness(0.7);
+            cursor: not-allowed;
+        }
+        #spinButton svg {
+            width: 40%;
+            height: 40%;
+            fill: currentColor;
+            transition: transform 0.5s;
+        }
+        #spinButton:not(:disabled):hover svg {
+            transform: rotate(180deg);
+        }
+
+        #autoSpinButton {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(1rem, 2vmin, 1.5rem); 
+            padding: 1.5vmin 3vmin; 
+            border: 2px solid var(--glow-color);
+            border-radius: 1.5vmin;
+            background-image: linear-gradient(to bottom, rgba(0, 242, 234, 0.3), rgba(0, 242, 234, 0.1));
+            color: #fff;
+            cursor: pointer;
+            text-shadow: 0 0 1vmin var(--glow-color);
+            transition: all 0.2s;
+        }
+        #autoSpinButton:not(.active):hover {
+            background-color: rgba(0, 242, 234, 0.4);
+            box-shadow: 0 0 2vmin var(--glow-color);
+            transform: translateY(-2px);
+        }
+        #autoSpinButton.active { 
+            background: var(--secondary-glow); 
+            border-color: var(--secondary-glow); 
+            box-shadow: 0 0 2vmin var(--secondary-glow); 
+        }
+
+        .reels-container {
+            display: flex;
+            gap: 1.5vmin;
+            padding: 2vmin;
+            background: rgba(0, 0, 0, 0.4);
+            border: 2px solid var(--glow-color);
+            border-radius: 2vmin;
+            box-shadow: 0 0 3vmin var(--glow-color), inset 0 0 2vmin rgba(0, 242, 234, 0.5);
+            backdrop-filter: blur(8px);
+            position: relative;
+        }
+
+        .reel {
+            width: clamp(120px, 18vmin, 300px);
+            height: clamp(360px, 54vmin, 900px);
+            overflow: hidden;
+            background: linear-gradient(135deg, rgba(249, 0, 255, 0.1), rgba(0, 242, 234, 0.1));
+            border-radius: 1vmin;
+            position: relative;
+            box-shadow: inset 0 0 10px #000;
+        }
+        
+        .reel-strip { position: absolute; top: 0; left: 0; width: 100%; transition: opacity 0.3s ease-out; }
+        .symbol {
+            width: 100%;
+            height: clamp(120px, 18vmin, 300px);
+            display: flex; justify-content: center; align-items: center; box-sizing: border-box; position: relative;
+        }
+        .symbol img {
+            max-width: 85%; max-height: 85%; object-fit: contain; filter: drop-shadow(0 0 8px rgba(0,0,0,0.7)); transition: transform 0.3s, filter 0.3s, opacity 0.2s ease-out;
+        }
+
+        #ui-panel {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 2vmin;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5vmin;
+            box-sizing: border-box;
+        }
+
+        .info-bar {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            width: 100%;
+            max-width: 1200px;
+            font-size: clamp(0.9rem, 2vmin, 1.2rem);
+        }
+        
+        .info-box { 
+            text-align: center; 
+        }
+
+        #balance-box, #win-box {
+            background: rgba(0,0,0,0.3);
+            border: 2px solid var(--glow-color);
+            border-radius: 1.5vmin;
+            padding: 1vmin 2vmin;
+            box-shadow: 0 0 1.5vmin var(--glow-color);
+            backdrop-filter: blur(5px);
+        }
+
+        .info-box span { font-family: 'Orbitron', sans-serif; display: block; font-size: clamp(1rem, 2.5vmin, 1.5rem); color: var(--glow-color);}
+        #message-box { font-family: 'Orbitron', sans-serif; font-size: clamp(1.1rem, 3vmin, 1.8rem); color: var(--win-glow-color); text-shadow: 0 0 10px var(--win-glow-color); padding: 1vmin; }
+        
+        #bet-selection-bar {
+            display: flex;
+            gap: 1.5vmin;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 1vmin 0;
+        }
+        .bet-select-btn {
+            font-family: 'Orbitron', sans-serif;
+            background: rgba(0,0,0,0.4);
+            border: 2px solid rgba(0, 242, 234, 0.5);
+            color: #fff;
+            padding: 1vmin 2vmin;
+            border-radius: 1vmin;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: clamp(0.9rem, 2vmin, 1.3rem);
+        }
+        .bet-select-btn:hover {
+            border-color: var(--glow-color);
+            background: rgba(0, 242, 234, 0.2);
+        }
+        .bet-select-btn.active {
+            background: var(--glow-color);
+            color: #000;
+            border-color: var(--glow-color);
+            box-shadow: 0 0 15px var(--glow-color);
+            transform: scale(1.05);
+        }
+
+        #win-lines-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
+        #win-lines-svg { overflow: visible; width: 100%; height: 100%; }
+        .win-line { fill: none; stroke: var(--secondary-glow); stroke-width: 5px; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 5px var(--secondary-glow)) drop-shadow(0 0 15px var(--secondary-glow)); stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: draw-line 0.8s ease-out forwards, blink-line 1s linear infinite 0.8s; }
+        @keyframes draw-line { to { stroke-dashoffset: 0; } }
+        @keyframes blink-line { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        
+        .symbol.win-pulse img { animation: win-pulse-anim 1s ease-out infinite; }
+        @keyframes win-pulse-anim { 0%, 100% { transform: scale(1); filter: drop-shadow(0 0 10px var(--win-glow-color)) brightness(1.2); } 50% { transform: scale(1.25); filter: drop-shadow(0 0 25px var(--win-glow-color)) drop-shadow(0 0 10px #fff) brightness(1.8); } }
+
+        /* --- MOBILE/PORTRAIT LAYOUT --- */
+        @media (orientation: portrait) {
+            #game-area {
+                flex-direction: column;
+                justify-content: center;
+                padding-top: 10vmin;
+                padding-bottom: 30vmin;
+                gap: 2vh;
+            }
+            .game-title { font-size: 8vmin; top: 2vmin; }
+            .reels-container {
+                order: 1;
+                width: 95vw;
+                height: 57vw;
+                padding: 1.5vw;
+                gap: 1vw;
+            }
+            .reel { width: 100%; height: 100%; }
+            .symbol { height: 33.333%; }
+            .symbol img { max-width: 80%; max-height: 80%; }
+            #right-panel {
+                order: 2;
+                height: auto;
+                padding: 0;
+                flex-direction: row;
+                gap: 4vw;
+                justify-content: center;
+                align-items: center;
+            }
+            #ui-panel {
+                padding: 1.5vmin;
+                gap: 1vmin;
+                justify-content: flex-end;
+                height: 30vmin;
+            }
+            .info-bar { font-size: clamp(0.8rem, 2.8vmin, 1.1rem); }
+            #bet-selection-bar { flex-wrap: wrap; gap: 1.5vmin; }
+            .bet-select-btn { padding: 1.5vmin 2.5vmin; }
+        }
+
+        /* --- FIX FOR LANDSCAPE ON SMALL HEIGHT DEVICES (PHONES) --- */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .game-title { font-size: 5vh; top: 1vh; }
+            #mute-button { width: 6vh; height: 6vh; font-size: 2.5vh; }
+            .side-panel { width: 15vw; padding: 0 2vw; }
+            #spinButton { width: 18vh; height: 18vh; }
+            #autoSpinButton { padding: 1vh 2vh; font-size: 2vh; }
+            #game-area { padding-top: 8vh; padding-bottom: 25vh; }
+            .reels-container { gap: 1vh; padding: 1.5vh; }
+            .reel { width: 15vh; height: 45vh; }
+            .symbol { height: 15vh; }
+            #ui-panel { height: 25vh; padding: 1vh; gap: 1vh;}
+            .info-bar { font-size: 2vh; }
+            .info-box span { font-size: 2.5vh; }
+            #bet-selection-bar { gap: 1vh; }
+            .bet-select-btn { padding: 1vh 1.5vh; font-size: 1.8vh; }
+        }
+    </style>
+</head>
+<body>
+    <div id="loading-screen">
+        <h1 class="loading-title">PARADISE MEMORIES</h1>
+        <div class="progress-bar-container">
+            <div id="progress-bar" class="progress-bar"></div>
+        </div>
+        <p id="loading-percentage">0%</p>
+    </div>
+
+    <div id="orientation-blocker">
+        <i class="fas fa-mobile-screen"></i>
+        <h2>Моля, завъртете устройството си</h2>
+        <p>Тази игра е оптимизирана за пейзажен (хоризонтален) режим.</p>
+    </div>
+
+    <div id="game-container">
+        
+        <h1 class="game-title">PARADISE MEMORIES</h1>
+        
+        <button id="mute-button"><i class="fas fa-volume-high"></i></button>
+
+        <div id="game-area">
+            <div class="side-panel"></div>
+            
+            <div class="reels-container">
+                <div class="reel" id="reel0"></div>
+                <div class="reel" id="reel1"></div>
+                <div class="reel" id="reel2"></div>
+                <div class="reel" id="reel3"></div>
+                <div class="reel" id="reel4"></div>
+                 <div id="win-lines-container">
+                    <svg id="win-lines-svg"></svg>
+                </div>
+            </div>
+            
+            <div id="right-panel" class="side-panel">
+                <button id="spinButton">
+                    <svg viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"></path></svg>
+                    <span id="spin-text">ЗАВЪРТИ</span>
+                </button>
+                <button id="autoSpinButton">AUTO</button>
+            </div>
+        </div>
+
+        <div id="ui-panel">
+            <div class="info-bar">
+                <div class="info-box" id="balance-box">Баланс:<span id="balance">0.00</span></div>
+                <div class="info-box" id="message-box">ИЗБЕРЕТЕ ЗАЛОГ</div>
+                <div class="info-box" id="win-box">Печалба:<span id="win">0.00</span></div>
+            </div>
+            <div id="bet-selection-bar">
+            </div>
+        </div>
+    </div>
+    
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    
+    const loadingScreen = document.getElementById('loading-screen');
+    const progressBar = document.getElementById('progress-bar');
+    const loadingPercentage = document.getElementById('loading-percentage');
+    const gameContainer = document.getElementById('game-container');
+
+    const SYMBOLS = {
+        'lol1': { weight: 20, src: 'lol1.png', videoSrc: 'lol1_v1.mp4', payout: { '3': 5,  '4': 10,  '5': 20  }},
+        'lol2': { weight: 18, src: 'lol2.png', videoSrc: 'lol2_v1.mp4', payout: { '3': 10, '4': 20,  '5': 40  }},
+        'lol3': { weight: 15, src: 'lol3.png', videoSrc: 'lol3_v1.mp4', payout: { '3': 15, '4': 30,  '5': 60  }},
+        'lol4': { weight: 12, src: 'lol4.png', videoSrc: 'lol4_v1.mp4', payout: { '3': 20, '4': 40,  '5': 80  }},
+        'lol5': { weight: 10, src: 'lol5.png', videoSrc: 'lol5_v1.mp4', payout: { '3': 30, '4': 60,  '5': 120 }},
+        'lol6': { weight: 8,  src: 'lol6.png', videoSrc: 'lol6_v1.mp4', payout: { '3': 50, '4': 100, '5': 200 }},
+        'lol7': { weight: 6,  src: 'lol7.png', videoSrc: 'lol7_v1.mp4', payout: { '3': 100,'4': 200, '5': 400 }},
+        'lol8': { weight: 4,  src: 'lol8.png', videoSrc: 'lol8_v1.mp4', payout: { '3': 200,'4': 400, '5': 800 }},
+        'lol9': { weight: 3,  src: 'lol9.png', videoSrc: 'lol9_v1.mp4', payout: { '3': 220,'4': 450, '5': 900 }},
+        'wild': { weight: 2,  src: 'wild.png', videoSrc: 'wild_v1.mp4', isWild: true, payout: { '3': 250, '4': 500, '5': 1000 }}
+    };
+
+    async function preloadAssetsAndStartGame() {
+        const SOUND_FILES = ['bg_music_1.mp3', 'bg_music_2.mp3', 'bg_music_3.mp3', 'win_sound.mp3'];
+        
+        const assetsToLoad = [];
+        Object.values(SYMBOLS).forEach(symbol => {
+            assetsToLoad.push({type: 'image', src: symbol.src});
+            if (symbol.videoSrc) {
+                assetsToLoad.push({type: 'video', src: symbol.videoSrc});
+            }
+        });
+        SOUND_FILES.forEach(name => assetsToLoad.push({type: 'audio', src: name}));
+        
+        let loadedCount = 0;
+        const totalCount = assetsToLoad.length;
+        
+        const promises = assetsToLoad.map(asset => {
+            return new Promise((resolve) => {
+                const onAssetLoaded = () => {
+                    loadedCount++;
+                    const percentage = Math.round((loadedCount / totalCount) * 100);
+                    progressBar.style.width = `${percentage}%`;
+                    loadingPercentage.textContent = `${percentage}%`;
+                    resolve();
+                };
+                
+                const onAssetError = () => {
+                    console.error(`Failed to load asset: ${asset.src}`);
+                    onAssetLoaded(); // Continue loading
+                };
+
+                if (asset.type === 'image') {
+                    const img = new Image();
+                    img.src = asset.src;
+                    img.onload = onAssetLoaded;
+                    img.onerror = onAssetError;
+                } else if (asset.type === 'audio' || asset.type === 'video') {
+                     const media = asset.type === 'audio' ? new Audio() : document.createElement('video');
+                     media.addEventListener('canplaythrough', onAssetLoaded, { once: true });
+                     media.addEventListener('error', onAssetError, { once: true });
+                     media.src = asset.src;
+                }
+            });
+        });
+
+        await Promise.all(promises);
+        
+        loadingPercentage.textContent = "НАТИСНЕТЕ, ЗА ДА ЗАПОЧНЕТЕ";
+        
+        loadingScreen.addEventListener('click', () => {
+            loadingScreen.style.opacity = '0';
+            goFullscreen();
+            setTimeout(() => {
+                loadingScreen.style.display = 'none';
+                gameContainer.style.display = 'flex';
+                initializeGameLogic(1000.00); // Start with a fixed balance
+            }, 500);
+        }, { once: true });
+
+    }
+    
+    function goFullscreen() {
+        const elem = document.documentElement;
+        if (elem.requestFullscreen) {
+            elem.requestFullscreen().catch(err => console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`));
+        } else if (elem.webkitRequestFullscreen) {
+            elem.webkitRequestFullscreen();
+        }
+    }
+    
+    function initializeGameLogic(initialBalance) {
+        const REEL_COUNT = 5;
+        const SYMBOLS_PER_REEL_VISIBLE = 3;
+        const PAYLINES = [
+            [1, 1, 1, 1, 1], [0, 0, 0, 0, 0], [2, 2, 2, 2, 2], [0, 1, 2, 1, 0], [2, 1, 0, 1, 2],
+            [0, 0, 1, 2, 2], [2, 2, 1, 0, 0], [1, 0, 0, 0, 1], [1, 2, 2, 2, 1], [0, 1, 1, 1, 2]
+        ];
+        
+        const BET_AMOUNTS = [1, 2, 5, 10, 20, 50];
+        const MAX_WIN_MULTIPLIER = 2500;
+
+        let balance = initialBalance;
+        let currentBetIndex = 2;
+        let bet = BET_AMOUNTS[currentBetIndex];
+        let isSpinning = false;
+        let isAutoSpinning = false;
+        let isMuted = false;
+
+        const backgroundMusicFiles = ['bg_music_1.mp3', 'bg_music_2.mp3', 'bg_music_3.mp3'];
+        let currentTrackIndex = 0;
+        const bgMusicPlayer = new Audio();
+        bgMusicPlayer.volume = 0.3;
+        const winSound = new Audio('win_sound.mp3');
+        const allSounds = [bgMusicPlayer, winSound];
+
+        const spinButton = document.getElementById('spinButton');
+        const autoSpinButton = document.getElementById('autoSpinButton');
+        const balanceDisplay = document.getElementById('balance');
+        const winDisplay = document.getElementById('win');
+        const reels = Array.from({ length: REEL_COUNT }, (_, i) => document.getElementById(`reel${i}`));
+        const winLinesSvg = document.getElementById('win-lines-svg');
+        const betSelectionBar = document.getElementById('bet-selection-bar');
+        const messageBox = document.getElementById('message-box');
+        const muteButton = document.getElementById('mute-button');
+        
+        const reelStrips = [];
+        
+        function playNextTrack() {
+            if (backgroundMusicFiles.length === 0) return;
+            currentTrackIndex = (currentTrackIndex + 1) % backgroundMusicFiles.length;
+            bgMusicPlayer.src = backgroundMusicFiles[currentTrackIndex];
+            bgMusicPlayer.play().catch(e => console.warn("Music play failed."));
+        }
+        
+        bgMusicPlayer.addEventListener('ended', playNextTrack);
+
+        function manageBackgroundMusic(shouldPlay) {
+            if (shouldPlay && bgMusicPlayer.paused && !isMuted) {
+                bgMusicPlayer.play().catch(e => {});
+            } else if (!shouldPlay && !bgMusicPlayer.paused) {
+                bgMusicPlayer.pause();
+            }
+        }
+        
+        function toggleMute() {
+            isMuted = !isMuted;
+            allSounds.forEach(sound => sound.muted = isMuted);
+            muteButton.innerHTML = `<i class="fas ${isMuted ? 'fa-volume-xmark' : 'fa-volume-high'}"></i>`;
+            if (isMuted) {
+                bgMusicPlayer.pause();
+            } else {
+                manageBackgroundMusic(true);
+            }
+        }
+        muteButton.addEventListener('click', toggleMute);
+
+        function createWeightedStrip() {
+            const strip = [];
+            for (const key in SYMBOLS) {
+                for (let i = 0; i < SYMBOLS[key].weight; i++) strip.push(key);
+            }
+            return strip.sort(() => Math.random() - 0.5);
+        }
+        
+        function initializeReels() {
+            reels.forEach((reelElement) => {
+                reelElement.innerHTML = '';
+                const reelStripElement = document.createElement('div');
+                reelStripElement.className = 'reel-strip';
+                const weightedStrip = createWeightedStrip();
+                reelStrips.push(weightedStrip);
+
+                const totalSymbols = weightedStrip.length * 3; 
+                for(let i = 0; i < totalSymbols; i++) {
+                    const symbolKey = weightedStrip[i % weightedStrip.length];
+                    const symbolElement = document.createElement('div');
+                    symbolElement.className = 'symbol';
+                    const img = document.createElement('img');
+                    img.src = SYMBOLS[symbolKey].src;
+                    img.alt = symbolKey;
+                    img.loading = 'lazy';
+                    symbolElement.appendChild(img);
+                    reelStripElement.appendChild(symbolElement);
+                }
+                reelElement.appendChild(reelStripElement);
+            });
+        }
+        
+        function initializeUI() {
+            betSelectionBar.innerHTML = '';
+            BET_AMOUNTS.forEach((amount, index) => {
+                const button = document.createElement('button');
+                button.classList.add('bet-select-btn');
+                button.textContent = amount.toFixed(2);
+                button.dataset.index = index;
+                betSelectionBar.appendChild(button);
+            });
+            updateBetSelection();
+            updateBalanceDisplay();
+            updateWin(0);
+        }
+        
+        function updateBetSelection() {
+            bet = BET_AMOUNTS[currentBetIndex];
+            document.querySelectorAll('.bet-select-btn').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.index) === currentBetIndex);
+            });
+        }
+
+        async function spin() {
+            if (isSpinning) return;
+
+            if (bgMusicPlayer.paused) {
+                 bgMusicPlayer.src = backgroundMusicFiles[currentTrackIndex];
+                 manageBackgroundMusic(true);
+            }
+
+            if (balance < bet) {
+                if(isAutoSpinning) toggleAutoSpin();
+                messageBox.textContent = "Недостатъчен Баланс";
+                return;
+            }
+
+            isSpinning = true;
+            setControlsDisabled(true);
+            
+            clearAnimations();
+            await updateWin(0);
+            messageBox.textContent = "УСПЕХ!";
+            
+            balance -= bet;
+            updateBalanceDisplay();
+            
+            let results = [];
+            const finalIndexes = [];
+            
+            for (let i = 0; i < REEL_COUNT; i++) {
+                const strip = reelStrips[i];
+                const randomIndex = Math.floor(Math.random() * strip.length);
+                finalIndexes.push(randomIndex);
+                results.push([
+                    strip[(randomIndex + 0) % strip.length],
+                    strip[(randomIndex + 1) % strip.length],
+                    strip[(randomIndex + 2) % strip.length]
+                ]);
+            }
+            
+            const spinPromises = reels.map((reel, i) => {
+                return new Promise(async (resolve) => {
+                    const reelStripElement = reel.querySelector('.reel-strip');
+                    const strip = reelStrips[i];
+                    const symbolSize = reel.clientHeight / SYMBOLS_PER_REEL_VISIBLE;
+                    const baseTargetPosition = finalIndexes[i] * symbolSize;
+                    const loopOffset = strip.length * symbolSize;
+                    
+                    reelStripElement.style.transition = 'none';
+                    reelStripElement.style.transform = `translateY(-${baseTargetPosition + loopOffset}px)`;
+                    reelStripElement.offsetHeight; 
+
+                    let duration = 1.5 + i * 0.3;
+                    
+                    reelStripElement.style.transition = `transform ${duration}s cubic-bezier(0.25, 1, 0.5, 1)`;
+                    reelStripElement.style.transform = `translateY(-${baseTargetPosition}px)`;
+
+                    await new Promise(res => setTimeout(res, duration * 1000));
+                    resolve();
+                });
+            });
+            
+            await Promise.all(spinPromises);
+
+            const { hasWin, winAmount } = await checkWin(results, finalIndexes);
+            
+            if (!hasWin) {
+                messageBox.textContent = "ИЗБЕРЕТЕ ЗАЛОГ";
+            } else {
+                 messageBox.textContent = `ПЕЧАЛБА: ${winAmount.toFixed(2)}`;
+            }
+            
+            handleNextAction();
+        }
+        
+        spinButton.addEventListener('click', () => spin());
+        autoSpinButton.addEventListener('click', toggleAutoSpin);
+
+        betSelectionBar.addEventListener('click', (e) => {
+            const button = e.target.closest('.bet-select-btn');
+            if (button && !isSpinning) {
+                currentBetIndex = parseInt(button.dataset.index);
+                updateBetSelection();
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                spinButton.click();
+            }
+        });
+
+        function toggleAutoSpin() {
+            isAutoSpinning = !isAutoSpinning;
+            autoSpinButton.classList.toggle('active', isAutoSpinning);
+            if (isAutoSpinning) {
+                autoSpinButton.textContent = "СТОП";
+                if(!isSpinning) spin();
+            } else {
+                autoSpinButton.textContent = "AUTO";
+            }
+        }
+        
+        function setControlsDisabled(disabled) {
+            spinButton.disabled = disabled;
+            autoSpinButton.disabled = disabled && !isAutoSpinning;
+            betSelectionBar.style.pointerEvents = disabled ? 'none' : 'auto';
+        }
+
+        function handleNextAction() {
+            if (isAutoSpinning) {
+                isSpinning = false; 
+                spin(); 
+            } else {
+                isSpinning = false;
+                setControlsDisabled(false);
+            }
+        }
+        
+        function clearAnimations() {
+            winLinesSvg.innerHTML = '';
+            document.querySelectorAll('.symbol').forEach(el => {
+                el.className = 'symbol';
+            });
+        }
+
+        async function checkWin(results, finalIndexes) {
+            let totalWin = 0; 
+            const winningLines = [];
+            
+            PAYLINES.forEach((line) => {
+                let payingSymbolKey = null;
+                for (let i = 0; i < REEL_COUNT; i++) {
+                    const symbol = results[i][line[i]];
+                    if (!SYMBOLS[symbol]?.isWild) { payingSymbolKey = symbol; break; }
+                }
+                if (payingSymbolKey === null) payingSymbolKey = 'wild';
+
+                let matchCount = 0;
+                for (let i = 0; i < REEL_COUNT; i++) {
+                    const currentSymbolKey = results[i][line[i]];
+                    if (currentSymbolKey === payingSymbolKey || SYMBOLS[currentSymbolKey]?.isWild) matchCount++;
+                    else break;
+                }
+
+                if (matchCount >= 3) {
+                    const symbolData = SYMBOLS[payingSymbolKey];
+                    if (symbolData?.payout?.[matchCount]) {
+                        const payout = symbolData.payout[matchCount] * bet;
+                        totalWin += payout;
+                        const lineCoords = [];
+                        for (let i = 0; i < matchCount; i++) {
+                            lineCoords.push({reel: i, row: line[i]});
+                        }
+                        winningLines.push({coords: lineCoords, payingSymbol: payingSymbolKey});
+                    }
+                }
+            });
+            
+            const maxWin = bet * MAX_WIN_MULTIPLIER;
+            if (totalWin > maxWin) totalWin = maxWin;
+
+            if (totalWin > 0) {
+                balance += totalWin;
+                updateBalanceDisplay();
+                
+                manageBackgroundMusic(false);
+                winSound.play();
+                winSound.onended = () => manageBackgroundMusic(true);
+                
+                await updateWin(totalWin, true);
+                drawWinningLines(winningLines);
+                await playWinAnimations(winningLines, finalIndexes);
+            }
+            
+            return { hasWin: totalWin > 0, winAmount: totalWin };
+        }
+
+        function getSymbolElement(reelIndex, stripIndex) {
+            const stripElement = reels[reelIndex].querySelector('.reel-strip');
+            if (!stripElement) return null;
+            return stripElement.children[stripIndex] || null;
+        }
+
+        async function playWinAnimations(winningLines, finalIndexes) {
+            const videoPromises = [];
+            const playedPositions = new Set(); 
+
+            winningLines.forEach(line => {
+                const payingSymbolKey = line.payingSymbol;
+                const symbolData = SYMBOLS[payingSymbolKey];
+                if (!symbolData || !symbolData.videoSrc) return;
+
+                line.coords.forEach(coord => {
+                    const posId = `${coord.reel}-${coord.row}`;
+                    if (playedPositions.has(posId)) return;
+                    playedPositions.add(posId);
+
+                    const domIndex = finalIndexes[coord.reel] + coord.row;
+                    const symbolElement = getSymbolElement(coord.reel, domIndex);
+                    
+                    if (symbolElement) {
+                        const videoPromise = new Promise(resolve => {
+                            const imgElement = symbolElement.querySelector('img');
+                            imgElement.style.transition = 'opacity 0.2s';
+                            imgElement.style.opacity = '0';
+
+                            const video = document.createElement('video');
+                            video.src = symbolData.videoSrc;
+                            video.autoplay = true;
+                            video.muted = true;
+                            video.playsInline = true;
+                            video.style.position = 'absolute';
+                            video.style.top = '0'; video.style.left = '0';
+                            video.style.width = '100%'; video.style.height = '100%';
+                            video.style.objectFit = 'contain';
+                            video.style.zIndex = '10';
+                            symbolElement.appendChild(video);
+
+                            const onEnd = () => {
+                                if (symbolElement.contains(video)) symbolElement.removeChild(video);
+                                imgElement.style.opacity = '1';
+                                resolve();
+                            };
+                            video.onended = onEnd;
+                            video.onerror = onEnd;
+                        });
+                        videoPromises.push(videoPromise);
+                    }
+                });
+            });
+
+            await Promise.all(videoPromises);
+        }
+        
+        function drawWinningLines(winningLines) {
+            winLinesSvg.innerHTML = '';
+            const svgRect = winLinesSvg.getBoundingClientRect();
+            if (reels.length === 0 || !svgRect) return;
+
+            winningLines.forEach(lineData => {
+                const points = lineData.coords.map(coord => {
+                    const reel = reels[coord.reel];
+                    if (!reel) return '0,0';
+                    const reelRect = reel.getBoundingClientRect();
+                    const symbolHeight = reelRect.height / SYMBOLS_PER_REEL_VISIBLE;
+                    
+                    const x = reelRect.left - svgRect.left + (reelRect.width / 2);
+                    const y = reelRect.top - svgRect.top + (coord.row * symbolHeight) + (symbolHeight / 2);
+
+                    return `${x},${y}`;
+                }).join(' ');
+                
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+                line.setAttribute('points', points);
+                line.setAttribute('class', 'win-line');
+                winLinesSvg.appendChild(line);
+            });
+        }
+
+        async function updateWin(amount, animate = false) {
+            const targetAmount = amount.toFixed(2);
+            if (amount === 0) {
+                winDisplay.textContent = '0.00'; return;
+            }
+            if (animate) {
+                const duration = 1000; const frameDuration = 1000 / 60; const totalFrames = Math.round(duration / frameDuration);
+                let frame = 0; const startValue = 0; const endValue = amount;
+                return new Promise(resolve => {
+                    const timer = setInterval(() => {
+                        frame++; const progress = frame / totalFrames;
+                        const currentAmount = startValue + (endValue - startValue) * progress;
+                        winDisplay.textContent = currentAmount.toFixed(2);
+                        if (frame >= totalFrames) {
+                            clearInterval(timer);
+                            winDisplay.textContent = targetAmount;
+                            resolve();
+                        }
+                    }, frameDuration);
+                });
+            } else { winDisplay.textContent = targetAmount; }
+        }
+
+        function updateBalanceDisplay() { balanceDisplay.textContent = balance.toFixed(2); }
+        
+        initializeReels();
+        initializeUI();
+    }
+    
+    preloadAssetsAndStartGame();
+});
+</script>
+
+</body>
+</html>
